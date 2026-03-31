@@ -1,0 +1,24 @@
+name: OWASP A03 - Command Injection
+id: 7798e5bc-451d-4d7b-8340-b48fd5420db5
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Попытки выполнения системных команд (whoami, cat, ls, cmd.exe и т.д.)
+search: |
+  web_logs 
+  | rex field=uri "(?i)(whoami|cat\s+/etc/passwd|id\s+;|\$\(\s*whoami|cmd\.exe|/bin/(sh|bash))"
+  | stats count by src_ip, uri
+how_to_implement: ...
+known_false_positives: Легитимные запросы с именами файлов/команд.
+references:
+  - https://owasp.org/Top10/A03_2021-Injection/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 80
+  severity: high
+  confidence: high
