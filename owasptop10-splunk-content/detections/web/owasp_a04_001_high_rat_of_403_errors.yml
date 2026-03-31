@@ -1,0 +1,26 @@
+name: OWASP A04 - High Rate of 403 Errors
+id: ca2d1165-e191-4275-a394-7ba77defce26
+version: 1
+date: "2026-03-31"
+type: Anomaly
+status: production
+description: Возможный перебор защищённых директорий (более 50 ошибок 403 за 5 минут)
+search: |
+  web_logs 
+  | where status=403 
+  | bin _time span=5m 
+  | stats count by src_ip, _time 
+  | where count > 50
+how_to_implement: ...
+known_false_positives: Агрессивные легитимные сканеры.
+references:
+  - https://owasp.org/Top10/A04_2021-Insecure_Design/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1595
+  security_domain: web
+  risk_score: 55
+  severity: medium
+  confidence: high
