@@ -1,0 +1,24 @@
+name: OWASP A02 - Cleartext Transmission
+id: 7cd253a0-9fac-4acc-95ea-692247f85536
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Обнаружение передачи данных по незащищённым протоколам (HTTP, FTP, Telnet)
+search: |
+  network_logs 
+  | where dest_port IN (80, 21, 23)
+  | stats count by src_ip, dest_ip, dest_port, _time
+how_to_implement: Требуется индекс network_logs с полями dest_port.
+known_false_positives: Легитимный legacy-трафик. Используйте allowlist по IP.
+references:
+  - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: network
+  risk_score: 60
+  severity: medium
+  confidence: high
