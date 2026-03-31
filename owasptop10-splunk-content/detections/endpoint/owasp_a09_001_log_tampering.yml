@@ -1,0 +1,24 @@
+name: OWASP A09 - Log Tampering
+id: cc3455a7-b22a-4dd0-a8c6-6d4d00c922c3
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Очистка или удаление логов (Windows EventCode 1102)
+search: |
+  os_logs 
+  | where EventCode=1102 OR match(_raw, "(?i)log cleared|audit log cleared")
+  | stats count by host, user, _time
+how_to_implement: ...
+known_false_positives: Легитимное администрирование.
+references:
+  - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1070.002
+  security_domain: endpoint
+  risk_score: 70
+  severity: high
+  confidence: high
