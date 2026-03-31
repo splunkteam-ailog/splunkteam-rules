@@ -1,0 +1,24 @@
+name: OWASP A01 - Access to Config Files
+id: 80955fa2-95b2-4bf9-b1a8-e8c0c970f3b9
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Попытка прочитать .env, config.php, .git и другие чувствительные файлы
+search: |
+  web_logs 
+  | where match(uri, "(?i)\.(env|git/config|config|passwd|htpasswd|bak|old)$") OR uri LIKE "%/etc/passwd%"
+  | stats count by src_ip, uri, status
+how_to_implement: Убедитесь, что web_logs содержит поле uri и status.
+known_false_positives: Сканеры уязвимостей (Nessus, OpenVAS). Добавьте в allowlist.
+references:
+  - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 65
+  severity: high
+  confidence: medium
