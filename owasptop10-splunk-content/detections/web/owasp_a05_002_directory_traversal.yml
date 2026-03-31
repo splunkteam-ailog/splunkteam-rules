@@ -1,0 +1,24 @@
+name: OWASP A05 - Directory Traversal
+id: 2e8e223a-3f12-4bed-bbf4-05a1002fce11
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Попытка выхода за пределы директории (../, %2e%2e%2f и т.д.)
+search: |
+  web_logs 
+  | rex field=uri "(?i)(%2e%2e%2f|%2e%2e%5c|\.\.\/|\.\.\\|%5c\.%2e)"
+  | stats count by src_ip, uri
+how_to_implement: ...
+known_false_positives: Легитимные запросы с .. в URL (редко).
+references:
+  - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 80
+  severity: high
+  confidence: high
