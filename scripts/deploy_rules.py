@@ -2,15 +2,21 @@ import os
 import requests
 import yaml
 import glob
+import urllib3
 
-# Данные из секретов GitHub
+# Отключаем предупреждения о самоподписанном сертификате (чтобы лог был чистым)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Правильно достаем данные из секретов GitHub (используем ИМЕНА секретов)
 HOST = os.getenv('SPLUNK_HOST')
 TOKEN = os.getenv('SPLUNK_TOKEN')
-# Порт 8089 — стандарт для API Splunk
+TG_TOKEN = os.getenv('TELEGRAM_TOKEN')
+CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+# Ссылка на API
 URL = f"https://{HOST}:8089/servicesNS/admin/search/saved/searches?output_mode=json"
 
 def deploy():
-    # Ищем все .yml файлы в папке rules
     for rule_file in glob.glob("rules/**/*.yml", recursive=True):
         with open(rule_file, 'r') as f:
             rule = yaml.safe_load(f)
@@ -18,25 +24,34 @@ def deploy():
         print(f"Деплой правила: {rule['name']}")
         
         headers = {"Authorization": f"Bearer {TOKEN}"}
+        
+        # Формируем данные для Splunk
         data = {
             "name": rule['name'],
             "search": rule['search_query'],
             "description": f"OWASP Rule from GitHub: {rule['description']}",
             "is_scheduled": 1,
-            "cron_schedule": "*/5 * * * *", # Проверка каждые 5 минут
+            "cron_schedule": "*/5 * * * *", 
             "alert_type": "number of events",
             "alert_comparator": "greater than",
             "alert_threshold": 0,
-            "actions": "summary_index" # Или 'email', если настроена почта
+            "actions": "webhook", # Включаем вебхук
+            "action.webhook.enable_whitelist": "1",
+            # Используем переменные для Telegram
+            "action.webhook.uri": f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage?chat_id={CHAT_ID}&text=SOC_ALERT:_*$name$*_Detected!%0ACheck_Splunk_immediately."
         }
         
-        # verify=False нужен, если на Splunk нет платного SSL сертификата
-        response = requests.post(URL, headers=headers, data=data, verify=False)
-        
-        if response.status_code in [201, 409]: # 201 - создано, 409 - уже существует
-            print(f"--- Успешно: {rule['name']}")
-        else:
-            print(f"--- Ошибка {response.status_code}: {response.text}")
+        try:
+            response = requests.post(URL, headers=headers, data=data, verify=False, timeout=10)
+            
+            if response.status_code == 201:
+                print(f"--- Успешно: {rule['name']} создано.")
+            elif response.status_code == 409:
+                print(f"--- Инфо: {rule['name']} уже существует (пропускаем).")
+            else:
+                print(f"--- Ошибка {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"--- Критическая ошибка связи: {e}")
 
 if __name__ == "__main__":
     deploy()
