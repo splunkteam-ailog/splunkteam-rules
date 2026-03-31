@@ -1,0 +1,27 @@
+name: Deploy OWASP Rules to Splunk
+
+on:
+  push:
+    paths:
+      - 'rules/**' # Запускать только если изменились файлы в папке rules
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-python: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml
+
+      - name: Run deployment script
+        env:
+          SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
+          SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+        run: python scripts/deploy_rules.py
