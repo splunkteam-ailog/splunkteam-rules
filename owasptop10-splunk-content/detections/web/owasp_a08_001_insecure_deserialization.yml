@@ -1,0 +1,24 @@
+name: OWASP A08 - Insecure Deserialization
+id: ae95f07f-e0c6-4d93-8491-573c45d3474f
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Обнаружение сериализованных объектов Java/Python в cookies
+search: |
+  web_logs 
+  | rex field=cookie "(?i)(rO0AB|YTo|Tzo|base64:)"
+  | stats count by src_ip, uri
+how_to_implement: ...
+known_false_positives: Легитимные base64-куки (редко).
+references:
+  - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 80
+  severity: high
+  confidence: medium
