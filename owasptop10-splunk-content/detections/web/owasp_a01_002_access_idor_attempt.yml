@@ -1,0 +1,25 @@
+name: OWASP A01 - IDOR Attempt
+id: 6ebcaaf4-146b-43eb-8922-a79cd0eb729e
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Insecure Direct Object Reference
+search: |
+  web_logs 
+  | rex field=uri "\/users\/(?<requested_id>[^\/\?]+)" 
+  | where requested_id != authenticated_user OR isnull(authenticated_user)
+  | stats count by src_ip, uri, requested_id, authenticated_user, _time
+how_to_implement: Убедитесь, что поле authenticated_user извлекается из сессии/токена (например, через lookup или CIM).
+known_false_positives: Легитимный доступ администратора к чужим профилям. Настройте lookup исключений.
+references:
+  - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 70
+  severity: high
+  confidence: high
