@@ -1,0 +1,51 @@
+name: OWASP Top 10 2021
+id: 9f8e7d6c-5a4b-4f3e-9c2d-1b8a7f6e5d4c
+version: 1
+date: "2026-03-31"
+author: Fərhad + Grok
+description: Набор профессиональных детектов для OWASP Top 10 2021. Покрывает все 10 категорий рисков веб-приложений.
+narrative: |
+  Данная Analytic Story объединяет 15 высококачественных detection rules, 
+  соответствующих OWASP Top 10 2021. 
+  Правила охватывают Broken Access Control, Injection, SSRF, Log4Shell, 
+  Brute Force, Credential Stuffing и другие критические векторы атак.
+  Рекомендуется для SOC, DevSecOps и Blue Team.
+
+  Все правила находятся в production-статусе и готовы к использованию в Splunk ES.
+
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  security_domain:
+    - web
+    - network
+    - endpoint
+  mitre_attack:
+    - T1190
+    - T1110
+    - T1595
+    - T1070.002
+  risk_score: 70
+  severity: high
+
+# Список всех детектов, входящих в историю (для удобства в Splunk)
+detections:
+  - OWASP A01 - IDOR Attempt
+  - OWASP A01 - Access to Config Files
+  - OWASP A02 - Cleartext Transmission
+  - OWASP A03 - SQL Injection (Basic)
+  - OWASP A03 - Command Injection
+  - OWASP A03 - NoSQL Injection
+  - OWASP A04 - High Rate of 403 Errors
+  - OWASP A05 - Default Credentials Page
+  - OWASP A05 - Directory Traversal
+  - OWASP A06 - Log4Shell Detection
+  - OWASP A07 - Brute Force (Web)
+  - OWASP A07 - Credential Stuffing
+  - OWASP A08 - Insecure Deserialization
+  - OWASP A09 - Log Tampering
+  - OWASP A10 - Internal IP Call in URI (SSRF)
+
+references:
+  - https://owasp.org/Top10/
+  - https://github.com/splunk/security_content
