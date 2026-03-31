@@ -1,0 +1,33 @@
+name: OWASP Top 10 2021 Splunk Content
+author: ""
+version: 1.0.0
+date: "2026-03-31"
+description: Полный набор детектов OWASP Top 10 2021 в формате Splunk Security Content (production-ready)
+
+min_splunk_version: "9.0.0"
+max_splunk_version: "9.3.0"
+
+content:
+  detections:
+    - path: owasptop10-splunk-content/detections   # оставляем твой путь
+
+  stories:
+    - path: owasptop10-splunk-content/stories
+
+  macros: []          # можно добавить позже, если сделаешь макросы
+
+build:
+  validate: true
+  test: true
+
+# Настройки приложения, которое будет собрано
+splunk_app:
+  name: OWASP_Top10_2021
+  version: 1.0.0
+  author: "Fərhad"
+  description: "OWASP Top 10 2021 Detection Rules for Splunk"
+
+# Для GitHub Actions
+deployment:
+  enabled: true
+  target: splunk
