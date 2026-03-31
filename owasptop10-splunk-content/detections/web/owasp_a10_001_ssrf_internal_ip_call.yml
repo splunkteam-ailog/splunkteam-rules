@@ -1,0 +1,24 @@
+name: OWASP A10 - Internal IP Call in URI (SSRF)
+id: 64fae081-e5b0-4f89-9270-ca89d3796fc8
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Попытка SSRF на внутренние адреса (AWS Metadata, localhost и т.д.)
+search: |
+  web_logs 
+  | rex field=uri "(?i)(169\.254\.169\.254|localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)"
+  | stats count by src_ip, uri
+how_to_implement: ...
+known_false_positives: Легитимные запросы к внутренним сервисам.
+references:
+  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 85
+  severity: critical
+  confidence: high
