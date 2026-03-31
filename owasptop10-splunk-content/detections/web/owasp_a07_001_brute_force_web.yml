@@ -1,0 +1,26 @@
+name: OWASP A07 - Brute Force (Web)
+id: f5d694bd-a909-4792-8096-6e6c772f4bb8
+version: 1
+date: "2026-03-31"
+type: Anomaly
+status: production
+description: Более 10 неудачных попыток входа за 5 минут
+search: |
+  web_logs 
+  | where (uri="/login" OR uri="/auth") AND status IN (401, 403)
+  | bin _time span=5m 
+  | stats count by src_ip, _time 
+  | where count > 10
+how_to_implement: ...
+known_false_positives: Забытые пароли пользователя.
+references:
+  - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1110
+  security_domain: web
+  risk_score: 65
+  severity: high
+  confidence: high
