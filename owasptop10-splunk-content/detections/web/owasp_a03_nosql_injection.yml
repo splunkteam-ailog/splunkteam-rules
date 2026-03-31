@@ -1,0 +1,24 @@
+name: OWASP A03 - NoSQL Injection
+id: 7ff323f1-e774-475b-99d8-dc9b2651f4ab
+version: 1
+date: "2026-03-31"
+type: TTP
+status: production
+description: Специфические NoSQL-паттерны (MongoDB, Redis)
+search: |
+  web_logs 
+  | rex field=_raw "(?i)(\$gt|\$ne|\$eq|\$regex|\$where|\$ne)"
+  | stats count by src_ip
+how_to_implement: ...
+known_false_positives: Легитимные JSON-запросы.
+references:
+  - https://owasp.org/Top10/A03_2021-Injection/
+tags:
+  analytic_story:
+    - OWASP Top 10 2021
+  mitre_attack:
+    - T1190
+  security_domain: web
+  risk_score: 75
+  severity: high
+  confidence: medium
