@@ -17,7 +17,7 @@ CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 URL = f"https://{HOST}:8089/servicesNS/admin/search/saved/searches?output_mode=json"
 
 def deploy():
-    for rule_file in glob.glob("owasptop10-splunk-content/detections/**/*.yml", recursive=True):
+    for rule_file in glob.glob("rules/**/*.yml", recursive=True):
         with open(rule_file, 'r') as f:
             rule = yaml.safe_load(f)
         
