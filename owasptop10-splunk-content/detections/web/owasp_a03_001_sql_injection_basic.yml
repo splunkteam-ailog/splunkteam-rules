@@ -4,7 +4,7 @@ version: 1
 date: "2026-03-31"
 type: TTP
 status: production
-description: Классические SQLi: OR 1=1, UNION, DROP и т.д.
+description: "Классические SQLi: OR 1=1, UNION, DROP и т.д."
 search: |
   web_logs 
   | rex field=uri "(?i)(union\s+select|or\s+1=1|drop\s+table|delete\s+from|update\s+\w+\s+set|truncate\s+table)"
