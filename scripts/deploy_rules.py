@@ -7,7 +7,7 @@ TG_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 # Принудительно сохраняем в приложение 'search', чтобы ты видел их в интерфейсе
-URL = f"https://{HOST}:8089/servicesNS/admin/search/saved/searches?output_mode=json"
+URL = f"https://{HOST}:8089/servicesNS/nobody/search/saved/searches?output_mode=json"
 
 def deploy():
     # Ищем файлы именно в твоей папке detections
