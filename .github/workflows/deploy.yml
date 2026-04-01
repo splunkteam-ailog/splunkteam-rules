@@ -3,8 +3,9 @@ name: Deploy OWASP Rules to Splunk
 on:
   push:
     paths:
-      - 'rules/**' # Запускать только если изменились файлы в папке rules
+      - '**/detections/**/*.yml' # Запуск при любом изменении yml файлов в папках detections
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,4 +27,7 @@ jobs:
         env:
           SPLUNK_HOST: ${{ secrets.SPLUNK_HOST }}
           SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        # ИСПРАВЛЕНИЕ ЗДЕСЬ: прямой путь к скрипту, так как он лежит в корне репозитория в папке scripts
         run: python scripts/deploy_rules.py
