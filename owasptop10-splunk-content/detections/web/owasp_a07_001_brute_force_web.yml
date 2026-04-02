@@ -1,20 +1,38 @@
 name: OWASP A07 - Brute Force (Web)
 id: f5d694bd-a909-4792-8096-6e6c772f4bb8
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: Anomaly
 status: production
-description: Более 10 неудачных попыток входа за 5 минут
+description: "Более 10 неудачных попыток входа за 5 минут. Детектирует брутфорс по полю client_ip в JSON-логах API."
+
 search: |
-  web_logs 
-  | where (uri="/login" OR uri="/auth") AND status IN (401, 403)
-  | bin _time span=5m 
-  | stats count by src_ip, _time 
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval login_path = coalesce(path, uri)
+  | eval auth_status = coalesce(status_code, status)
+  | where (login_path="/api/login" OR login_path="/login" OR login_path="/auth")
+    AND (auth_status=401 OR auth_status=403)
+  | bin _time span=5m
+  | stats count, values(username) as usernames by src_ip, _time
   | where count > 10
-how_to_implement: ...
-known_false_positives: Забытые пароли пользователя.
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, status_code, username, event_type.
+  Макрос web_logs не требуется — поиск работает через spath напрямую.
+  Убедись что index="main" содержит API-логи с event_type="api_request"
+  и event_type="login_failed".
+
+known_false_positives: |
+  Забытые пароли пользователей.
+  Системы мониторинга и healthcheck с повторными запросами.
+  Тестовые окружения с automated login тестами.
+
 references:
   - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -24,3 +42,5 @@ tags:
   risk_score: 65
   severity: high
   confidence: high
+  affected_field: client_ip
+  lo
