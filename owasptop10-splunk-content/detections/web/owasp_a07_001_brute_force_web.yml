@@ -21,8 +21,7 @@ search: |
 how_to_implement: |
   Логи должны быть в JSON-формате и содержать поля:
   client_ip, path, status_code, username, event_type.
-  Макрос web_logs не требуется — поиск работает через spath напрямую.
-  Убедись что index="main" содержит API-логи с event_type="api_request"
+  Убедись что index="main" содержит логи с event_type="api_request"
   и event_type="login_failed".
 
 known_false_positives: |
@@ -43,4 +42,5 @@ tags:
   severity: high
   confidence: high
   affected_field: client_ip
-  lo
+  log_format: json
+  tested: "2026-04-03"
