@@ -1,19 +1,46 @@
-name: OWASP A03 - SQL Injection 
+name: OWASP A03 - SQL Injection
 id: 41f946a9-3b72-4f51-9afb-8f8685e89daf
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Классические SQLi: OR 1=1, UNION, DROP и т.д.
+description: "Классические SQLi: OR 1=1, UNION, DROP и т.д. Детектирует SQL-инъекции в поле username в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=uri "(?i)(union\s+select|or\s+1=1|drop\s+table|delete\s+from|update\s+\w+\s+set|truncate\s+table)"
-  | where isnotnull(_raw) 
-  | stats count by src_ip, uri, status
-how_to_implement: Макрос web_logs должен включать uri и _raw.
-known_false_positives: Легитимные запросы с SQL-ключевыми словами в URL (редко).
+  index="main"
+  | spath input=_raw
+  | eval target = coalesce('username', path, _raw)
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | regex target="(?i)(union[\s%20]*select|or\s*1\s*=\s*1|drop\s+table|delete\s+from|update\s+\w+\s+set|truncate\s+table)"
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+schedule:
+  cron_schedule: "*/5 * * * *"
+  earliest_time: -15m
+  latest_time: now
+
+alert:
+  alert_type: number of events
+  alert_comparator: greater than
+  alert_threshold: "0"
+  action.webhook: 1
+  action.webhook.param.url: "https://api.telegram.org/bot8577866606:AAEe8JfeSvYIPIzUkGC3v-bFHIaQjuJlEhM/sendMessage?chat_id=981968417&text=🚨+SPLUNK+ALERT+TRIGGERED"
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  username, client_ip, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="login_failed".
+
+known_false_positives: |
+  Легитимные запросы с SQL-ключевыми словами в URL (редко).
+  Тестовые окружения с penetration testing инструментами.
+
 references:
   - https://owasp.org/Top10/A03_2021-Injection/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -23,3 +50,6 @@ tags:
   risk_score: 85
   severity: critical
   confidence: high
+  affected_field: username
+  log_format: json
+  tested: "2026-04-03"
