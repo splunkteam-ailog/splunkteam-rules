@@ -1,18 +1,35 @@
 name: OWASP A06 - Log4Shell Detection
 id: fb98e7dc-bc92-494c-8499-a3f85b2c7472
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Обнаружение Log4Shell (JNDI) атак
+description: "Обнаружение Log4Shell (JNDI) атак в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=_raw "(?i)\$\{jndi:(ldap|rmi|dns|http|nis|iiop|corba|nds):"
-  | stats count by src_ip, user_agent
-how_to_implement: ...
-known_false_positives: Редкие легитимные JNDI-строки.
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval target = coalesce(user_agent, path, username, _raw)
+  | regex target="(?i)\$\{jndi:(ldap|rmi|dns|http|nis|iiop|corba|nds|ldaps):"
+  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, user_agent, path, username, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request".
+  Log4Shell паттерны могут встречаться в user_agent, path и username.
+
+known_false_positives: |
+  Редкие легитимные JNDI-строки в приложениях.
+  Тестовые окружения с penetration testing инструментами.
+
 references:
   - https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/
+  - https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -22,3 +39,6 @@ tags:
   risk_score: 90
   severity: critical
   confidence: high
+  affected_field: user_agent
+  log_format: json
+  tested: "2026-04-03"
