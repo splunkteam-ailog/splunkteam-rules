@@ -1,18 +1,34 @@
 name: OWASP A08 - Insecure Deserialization
 id: ae95f07f-e0c6-4d93-8491-573c45d3474f
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Обнаружение сериализованных объектов Java/Python в cookies
+description: "Обнаружение сериализованных объектов Java/Python в cookies и заголовках в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=cookie "(?i)(rO0AB|YTo|Tzo|base64:)"
-  | stats count by src_ip, uri
-how_to_implement: ...
-known_false_positives: Легитимные base64-куки (редко).
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval target = coalesce(cookie, user_agent, path, _raw)
+  | regex target="(?i)(rO0AB|YTo[0-9]|Tzo[0-9]|base64:|O:[0-9]+:|a:[0-9]+:|__reduce__|pickle|java\.io\.Serializable)"
+  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, cookie, user_agent, path, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request".
+  Паттерны могут встречаться в cookie, user_agent и path.
+
+known_false_positives: |
+  Легитимные base64-куки в приложениях.
+  Сессионные токены в формате base64.
+
 references:
   - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -22,3 +38,6 @@ tags:
   risk_score: 80
   severity: high
   confidence: medium
+  affected_field: cookie
+  log_format: json
+  tested: "2026-04-03"
