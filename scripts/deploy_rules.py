@@ -54,7 +54,6 @@ def deploy():
             "description": description,
             # --- Расписание ---
             "is_scheduled": "1",
-            "enableSched": "1",
             "cron_schedule": "*/5 * * * *",
             "dispatch.earliest_time": "-15m",
             "dispatch.latest_time": "now",
