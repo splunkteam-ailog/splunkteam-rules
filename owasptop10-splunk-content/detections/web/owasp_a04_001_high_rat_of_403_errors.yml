@@ -1,20 +1,32 @@
 name: OWASP A04 - High Rate of 403 Errors
 id: ca2d1165-e191-4275-a394-7ba77defce26
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: Anomaly
 status: production
-description: Возможный перебор защищённых директорий (более 50 ошибок 403 за 5 минут)
+description: "Возможный перебор защищённых директорий (более 50 ошибок 403 за 5 минут) в JSON-логах API."
+
 search: |
-  web_logs 
-  | where status=403 
-  | bin _time span=5m 
-  | stats count by src_ip, _time 
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval auth_status = coalesce(status_code, status)
+  | where auth_status=403
+  | stats count, values(path) as paths by src_ip
   | where count > 50
-how_to_implement: ...
-known_false_positives: Агрессивные легитимные сканеры.
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request".
+
+known_false_positives: |
+  Агрессивные легитимные сканеры (Nessus, OpenVAS).
+  Системы мониторинга с частыми запросами к защищённым эндпоинтам.
+
 references:
   - https://owasp.org/Top10/A04_2021-Insecure_Design/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -24,3 +36,6 @@ tags:
   risk_score: 55
   severity: medium
   confidence: high
+  affected_field: client_ip
+  log_format: json
+  tested: "2026-04-03"
