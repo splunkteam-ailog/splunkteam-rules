@@ -1,4 +1,6 @@
 import os, requests, yaml, glob, urllib3
+from urllib.parse import quote_plus
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 HOST = os.getenv('SPLUNK_HOST')
@@ -44,9 +46,9 @@ def deploy():
         # Удаляем старый чтобы не было 409
         delete_if_exists(name, headers)
 
-        # Формируем Telegram URL без пробелов
-        tg_text = f"🚨+SPLUNK+ALERT:+{name.replace(' ', '+')}+TRIGGERED"
-        tg_url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={tg_text}"
+        # Telegram webhook
+        tg_url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
+        tg_payload = f"chat_id={CHAT_ID}&text={quote_plus(f'🚨 SPLUNK ALERT: {name} TRIGGERED')}"
 
         data = {
             "name": name,
@@ -63,10 +65,13 @@ def deploy():
             "alert_threshold": "0",
             "alert.expires": "24h",
             "alert.severity": "3",
-            # --- Webhook (правильный параметр) ---
+            # --- Webhook ---
             "actions": "webhook",
             "action.webhook": "1",
-            "action.webhook.param.url": tg_url,  # ← исправлено с .uri на .param.url
+            "action.webhook.param.url": tg_url,
+            "action.webhook.param.method": "POST",
+            "action.webhook.param.payload": tg_payload,
+            "action.webhook.param.header.Content-Type": "application/x-www-form-urlencoded",
         }
 
         try:
