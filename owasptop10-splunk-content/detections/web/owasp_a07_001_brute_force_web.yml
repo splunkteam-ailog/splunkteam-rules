@@ -18,6 +18,18 @@ search: |
   | stats count, values(username) as usernames by src_ip, _time
   | where count > 10
 
+schedule:
+  cron_schedule: "*/5 * * * *"
+  earliest_time: -15m
+  latest_time: now
+
+alert:
+  alert_type: number of events
+  alert_comparator: greater than
+  alert_threshold: "0"
+  action.webhook: 1
+  action.webhook.param.url: "https://api.telegram.org/bot8577866606:AAEe8JfeSvYIPIzUkGC3v-bFHIaQjuJlEhM/sendMessage?chat_id=981968417&text=ALERT+A07+Brute+Force+TRIGGERED"
+
 how_to_implement: |
   Логи должны быть в JSON-формате и содержать поля:
   client_ip, path, status_code, username, event_type.
