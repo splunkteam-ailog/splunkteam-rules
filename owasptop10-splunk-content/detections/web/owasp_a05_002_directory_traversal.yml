@@ -1,18 +1,33 @@
 name: OWASP A05 - Directory Traversal
 id: 2e8e223a-3f12-4bed-bbf4-05a1002fce11
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Попытка выхода за пределы директории (../, %2e%2e%2f и т.д.)
+description: "Попытка выхода за пределы директории (../, %2e%2e%2f и т.д.) в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=uri "(?i)(%2e%2e%2f|%2e%2e%5c|\.\.\/|\.\.\\|%5c\.%2e)"
-  | stats count by src_ip, uri
-how_to_implement: ...
-known_false_positives: Легитимные запросы с .. в URL (редко).
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval target = coalesce(path, uri, _raw)
+  | regex target="(?i)(%2e%2e%2f|%2e%2e%5c|\.\.\/|\.\.\\\\|%5c\.%2e|%252e%252e|\.\.%2f|\.\.%5c)"
+  | stats count, values(target) as paths by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request".
+
+known_false_positives: |
+  Легитимные запросы с .. в URL (редко).
+  Тестовые окружения с penetration testing инструментами.
+
 references:
   - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -22,3 +37,6 @@ tags:
   risk_score: 80
   severity: high
   confidence: high
+  affected_field: path
+  log_format: json
+  tested: "2026-04-03"
