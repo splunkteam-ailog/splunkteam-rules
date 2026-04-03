@@ -1,18 +1,34 @@
 name: OWASP A03 - Command Injection
 id: 7798e5bc-451d-4d7b-8340-b48fd5420db5
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Попытки выполнения системных команд (whoami, cat, ls, cmd.exe и т.д.)
+description: "Попытки выполнения системных команд (whoami, cat, ls, cmd.exe и т.д.) в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=uri "(?i)(whoami|cat\s+/etc/passwd|id\s+;|\$\(\s*whoami|cmd\.exe|/bin/(sh|bash))"
-  | stats count by src_ip, uri
-how_to_implement: ...
-known_false_positives: Легитимные запросы с именами файлов/команд.
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval target = coalesce(username, path, _raw)
+  | regex target="(?i)(whoami|cat\s+\/etc\/passwd|id\s*;|\$\(whoami\)|cmd\.exe|\/bin\/(sh|bash)|nc\s+-|curl\s+http|wget\s+http|chmod\s+[0-9])"
+  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, username, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request"
+  и event_type="login_failed".
+
+known_false_positives: |
+  Легитимные запросы с именами файлов или команд в параметрах.
+  Тестовые окружения с penetration testing инструментами.
+
 references:
   - https://owasp.org/Top10/A03_2021-Injection/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -22,3 +38,6 @@ tags:
   risk_score: 80
   severity: high
   confidence: high
+  affected_field: username
+  log_format: json
+  tested: "2026-04-03"
