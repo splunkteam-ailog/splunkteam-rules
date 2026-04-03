@@ -1,18 +1,34 @@
 name: OWASP A03 - NoSQL Injection
 id: 7ff323f1-e774-475b-99d8-dc9b2651f4ab
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Специфические NoSQL-паттерны (MongoDB, Redis)
+description: "Специфические NoSQL-паттерны (MongoDB, Redis) в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=_raw "(?i)(\$gt|\$ne|\$eq|\$regex|\$where|\$ne)"
-  | stats count by src_ip
-how_to_implement: ...
-known_false_positives: Легитимные JSON-запросы.
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval target = coalesce(username, path, _raw)
+  | regex target="(?i)(\$gt|\$ne|\$eq|\$regex|\$where|\$exists|\$or|\$and|\$nin|\$in)"
+  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, username, status_code, event_type.
+  Убедись что index="main" содержит логи с event_type="api_request"
+  и event_type="login_failed".
+
+known_false_positives: |
+  Легитимные JSON-запросы содержащие операторы MongoDB.
+  Тестовые окружения с NoSQL базами данных.
+
 references:
   - https://owasp.org/Top10/A03_2021-Injection/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -22,3 +38,6 @@ tags:
   risk_score: 75
   severity: high
   confidence: medium
+  affected_field: username
+  log_format: json
+  tested: "2026-04-03"
