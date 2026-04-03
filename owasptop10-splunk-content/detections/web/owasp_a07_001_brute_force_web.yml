@@ -1,49 +1,20 @@
 name: OWASP A07 - Brute Force (Web)
 id: f5d694bd-a909-4792-8096-6e6c772f4bb8
-version: 2
-date: "2026-04-03"
+version: 1
+date: "2026-03-31"
 type: Anomaly
 status: production
-description: "Более 10 неудачных попыток входа за 5 минут. Детектирует брутфорс по полю client_ip в JSON-логах API."
-
+description: Более 10 неудачных попыток входа за 5 минут
 search: |
-  index="main"
-  | spath input=_raw
-  | eval src_ip = coalesce(client_ip, src_ip)
-  | eval login_path = coalesce(path, uri)
-  | eval auth_status = coalesce(status_code, status)
-  | where (login_path="/api/login" OR login_path="/login" OR login_path="/auth")
-    AND (auth_status=401 OR auth_status=403)
-  | bin _time span=5m
-  | stats count, values(username) as usernames by src_ip, _time
+  web_logs 
+  | where (uri="/login" OR uri="/auth") AND status IN (401, 403)
+  | bin _time span=5m 
+  | stats count by src_ip, _time 
   | where count > 10
-
-schedule:
-  cron_schedule: "*/5 * * * *"
-  earliest_time: -15m
-  latest_time: now
-
-alert:
-  alert_type: number of events
-  alert_comparator: greater than
-  alert_threshold: "0"
-  action.webhook: 1
-  action.webhook.param.url: "https://api.telegram.org/bot8577866606:AAEe8JfeSvYIPIzUkGC3v-bFHIaQjuJlEhM/sendMessage?chat_id=981968417&text=ALERT+A07+Brute+Force+TRIGGERED"
-
-how_to_implement: |
-  Логи должны быть в JSON-формате и содержать поля:
-  client_ip, path, status_code, username, event_type.
-  Убедись что index="main" содержит логи с event_type="api_request"
-  и event_type="login_failed".
-
-known_false_positives: |
-  Забытые пароли пользователей.
-  Системы мониторинга и healthcheck с повторными запросами.
-  Тестовые окружения с automated login тестами.
-
+how_to_implement: ...
+known_false_positives: Забытые пароли пользователя.
 references:
   - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
-
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -52,6 +23,7 @@ tags:
   security_domain: web
   risk_score: 65
   severity: high
+  confidence: high
   confidence: high
   affected_field: client_ip
   log_format: json
