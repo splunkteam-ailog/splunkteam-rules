@@ -1,33 +1,19 @@
 name: OWASP A03 - SQL Injection (Basic)
 id: 41f946a9-3b72-4f51-9afb-8f8685e89daf
-version: 2
-date: "2026-04-03"
+version: 1
+date: "2026-03-31"
 type: TTP
 status: production
-description: "Классические SQLi: OR 1=1, UNION, DROP и т.д. Детектирует SQL-инъекции в поле username (JSON-логи API)"
-
+description: Классические SQLi: OR 1=1, UNION, DROP и т.д.
 search: |
-  index="main"
-  | spath input=_raw
-  | eval target = coalesce('username', path, _raw)
-  | regex target="(?i)(union[\s%20]*select|or\s*1\s*=\s*1|drop\s+table|delete\s+from)"
-  | eval src_ip = coalesce(client_ip, src_ip)
-  | stats count, values(target) as payload, values(event_type) as event_type by src_ip, status_code
-  | rename status_code as status
-  | where count > 0
-
-how_to_implement: |
-  Логи должны быть в JSON-формате и содержать поля:
-  username, client_ip, status_code, event_type, path.
-  Макрос web_logs не обязателен — поиск работает напрямую через spath.
-
-known_false_positives: |
-  Легитимные пользователи с именами содержащими SQL-слова (крайне редко).
-  Тестовые окружения с автоматическими penetration testing инструментами.
-
+  web_logs 
+  | rex field=uri "(?i)(union\s+select|or\s+1=1|drop\s+table|delete\s+from|update\s+\w+\s+set|truncate\s+table)"
+  | where isnotnull(_raw) 
+  | stats count by src_ip, uri, status
+how_to_implement: Макрос web_logs должен включать uri и _raw.
+known_false_positives: Легитимные запросы с SQL-ключевыми словами в URL (редко).
 references:
   - https://owasp.org/Top10/A03_2021-Injection/
-
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -37,6 +23,3 @@ tags:
   risk_score: 85
   severity: critical
   confidence: high
-  affected_field: username
-  log_format: json
-  tested: "2026-04-03"
