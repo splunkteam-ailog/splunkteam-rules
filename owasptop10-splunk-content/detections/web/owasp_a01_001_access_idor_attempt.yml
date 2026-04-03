@@ -1,19 +1,36 @@
 name: OWASP A01 - IDOR Attempt
 id: 6ebcaaf4-146b-43eb-8922-a79cd0eb729e
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Insecure Direct Object Reference
+description: "Insecure Direct Object Reference — попытка доступа к чужим объектам через перебор ID в JSON-логах API."
+
 search: |
-  web_logs 
-  | rex field=uri "\/users\/(?<requested_id>[^\/\?]+)" 
-  | where requested_id != authenticated_user OR isnull(authenticated_user)
-  | stats count by src_ip, uri, requested_id, authenticated_user, _time
-how_to_implement: Убедитесь, что поле authenticated_user извлекается из сессии/токена (например, через lookup или CIM).
-known_false_positives: Легитимный доступ администратора к чужим профилям. Настройте lookup исключений.
+  index="main"
+  | spath input=_raw
+  | eval src_ip = coalesce(client_ip, src_ip)
+  | eval login_path = coalesce(path, uri)
+  | eval requested_id = replace(login_path, "^\/users\/([^\/\?]+).*$", "\1")
+  | eval auth_user = coalesce(username, authenticated_user)
+  | where match(login_path, "\/users\/[^\/\?]+")
+    AND (requested_id != auth_user OR isnull(auth_user))
+  | stats count, values(login_path) as paths, values(requested_id) as targets by src_ip, auth_user, status_code
+  | rename status_code as status
+  | where count > 0
+
+how_to_implement: |
+  Логи должны быть в JSON-формате и содержать поля:
+  client_ip, path, status_code, username.
+  Убедись что index="main" содержит логи с event_type="api_request".
+
+known_false_positives: |
+  Легитимный доступ администратора к чужим профилям.
+  Сервисные аккаунты с доступом ко всем объектам.
+
 references:
   - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+
 tags:
   analytic_story:
     - OWASP Top 10 2021
@@ -23,3 +40,6 @@ tags:
   risk_score: 70
   severity: high
   confidence: high
+  affected_field: path
+  log_format: json
+  tested: "2026-04-03"
