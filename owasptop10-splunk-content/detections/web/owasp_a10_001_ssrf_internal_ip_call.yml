@@ -1,24 +1,41 @@
 name: OWASP A10 - Internal IP Call in URI (SSRF)
 id: 64fae081-e5b0-4f89-9270-ca89d3796fc8
-version: 1
-date: "2026-03-31"
+version: 2
+date: "2026-04-03"
 type: TTP
 status: production
-description: Попытка SSRF на внутренние адреса (AWS Metadata, localhost и т.д.)
+description: "Detection of SSRF attempts targeting internal IP addresses and metadata services (AWS, localhost, etc.) in URI/URL fields."
 search: |
-  web_logs 
-  | rex field=uri "(?i)(169\.254\.169\.254|localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)"
-  | stats count by src_ip, uri
-how_to_implement: ...
-known_false_positives: Легитимные запросы к внутренним сервисам.
+index="main"
+| spath input=_raw
+| eval src_ip = coalesce(client_ip, src_ip)
+| eval target = coalesce(uri, url, path, _raw)
+| regex target="(?i)(169.254.169.254|localhost|127.0.0.1|10.\d+.\d+.\d+|172.(1[6-9]|2[0-9]|3[0-1]).\d+.\d+|192.168.\d+.\d+)"
+| stats count, values(target) as requested_uri, values(event_type) as event_type by src_ip, status_code
+| rename status_code as status
+| where count > 0
+how_to_implement: |
+Logs should be in JSON format and contain the following fields:
+client_ip, uri (or url/path), status_code, event_type.
+Ensure that index="main" contains web traffic or proxy logs.
+The regex patterns monitor for cloud metadata IPs and RFC1918 private address spaces.
+known_false_positives: |
+Legitimate internal service-to-service requests.
+Internal health checks or administrative tools accessing local resources.
 references:
-  - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+
+https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
 tags:
-  analytic_story:
-    - OWASP Top 10 2021
-  mitre_attack:
-    - T1190
-  security_domain: web
-  risk_score: 85
-  severity: critical
-  confidence: high
+analytic_story:
+
+OWASP Top 10 2021
+mitre_attack:
+
+T1190
+security_domain: web
+risk_score: 85
+severity: critical
+confidence: high
+affected_field: uri
+log_format: json
+tested: "2026-04-03"
