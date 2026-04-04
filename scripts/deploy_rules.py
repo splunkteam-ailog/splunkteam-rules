@@ -1,6 +1,5 @@
 import os, requests, yaml, glob, urllib3
 from urllib.parse import quote_plus
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 HOST = os.getenv('SPLUNK_HOST')
@@ -11,7 +10,6 @@ CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 URL = f"https://{HOST}:8089/servicesNS/nobody/search/saved/searches"
 
 def delete_if_exists(name, headers):
-    """Удаляем старый Report/Alert если существует"""
     del_url = f"https://{HOST}:8089/servicesNS/nobody/search/saved/searches/{requests.utils.quote(name, safe='')}"
     res = requests.delete(del_url, headers=headers, verify=False, timeout=10)
     if res.status_code == 200:
@@ -20,7 +18,6 @@ def delete_if_exists(name, headers):
 def deploy():
     rule_path = "owasptop10-splunk-content/detections/**/*.yml"
     files = glob.glob(rule_path, recursive=True)
-
     print(f"--- Найдено файлов: {len(files)}")
 
     for rule_file in files:
@@ -42,13 +39,11 @@ def deploy():
         print(f"[+] Деплой правила: {name}")
 
         headers = {"Authorization": f"Bearer {TOKEN}"}
-
-        # Удаляем старый чтобы не было 409
         delete_if_exists(name, headers)
 
-        # Telegram webhook
-        tg_url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        tg_payload = f"chat_id={CHAT_ID}&text={quote_plus(f'🚨 SPLUNK ALERT: {name} TRIGGERED')}"
+        # Уникальный текст для каждого алерта
+        tg_text = quote_plus(f"🚨 SPLUNK ALERT: {name} TRIGGERED")
+        tg_url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={tg_text}"
 
         data = {
             "name": name,
@@ -59,19 +54,20 @@ def deploy():
             "cron_schedule": "*/5 * * * *",
             "dispatch.earliest_time": "-15m",
             "dispatch.latest_time": "now",
-            # --- Триггер (без этого создаётся Report) ---
+            # --- Триггер ---
             "alert_type": "number of events",
             "alert_comparator": "greater than",
             "alert_threshold": "0",
             "alert.expires": "24h",
             "alert.severity": "3",
+            # --- Троттлинг отключён ---
+            "alert.suppress": "0",
+            "alert.suppress.period": "0",
+            "alert.track": "1",
             # --- Webhook ---
             "actions": "webhook",
             "action.webhook": "1",
             "action.webhook.param.url": tg_url,
-            "action.webhook.param.method": "POST",
-            "action.webhook.param.payload": tg_payload,
-            "action.webhook.param.header.Content-Type": "application/x-www-form-urlencoded",
         }
 
         try:
