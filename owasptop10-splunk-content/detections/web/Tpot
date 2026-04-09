@@ -1,0 +1,43 @@
+name: TPot - General Alert Detection
+id: tpot_general_alert
+description: Detects general network attacks from T-Pot honeypot logs and forwards to HEC
+
+search: |
+  index=tpot_logs event_type=alert
+  | eval src_ip=coalesce(src_ip, source_ip, ip)
+  | eval severity="high"
+  | eval uri="tpot_alert"
+  | eval status=tostring(dest_port)
+  | stats count by src_ip dest_ip dest_port proto severity uri status
+  | where count >= 1
+
+schedule:
+  cron: "*/1 * * * *"   # каждая минута
+  earliest_time: "-1m"
+  latest_time: "now"
+
+alert:
+  type: number of events
+  condition: greater than
+  threshold: 0
+
+actions:
+  hec_log_action:
+    enabled: true
+
+trigger:
+  per_result: true
+
+fields:
+  - src_ip
+  - dest_ip
+  - dest_port
+  - proto
+  - severity
+  - uri
+  - status
+
+metadata:
+  author: Farhad
+  version: 1.0
+  category: tpot
